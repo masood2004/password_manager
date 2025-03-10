@@ -1,3 +1,4 @@
+import json
 from tkinter import *
 from tkinter import messagebox
 import random
@@ -42,6 +43,12 @@ def save():
     website = website_input.get()
     email = email_username_input.get()
     password = password_input.get()
+    updated_data = {
+        website: {
+            "email": email,
+            "password": password
+        }
+    }
 
     if (website == "") or (password == ""):
         messagebox.showerror(title="Input Error", message="You have left some fields empty.")
@@ -51,25 +58,46 @@ def save():
         is_ok = messagebox.askokcancel(title=website, message=f"These are the details entered: \nEmail: {email} \nPassword: {password} \nIs it ok to save?")
 
         if is_ok:
-            with open("passwords.txt", 'a') as pass_list:
-                pass_list.write(f"{website} | {email} | {password}\n")
 
-            website_input.delete(0, END)
-            password_input.delete(0, END)
+            try:
+                with open("passwords.txt", 'a') as pass_list:
+                    pass_list.write(f"{website} | {email} | {password}\n")
+            except FileNotFoundError:
+                with open("passwords.txt", 'w') as pass_list:
+                    pass_list.write(f"{website} | {email} | {password}\n")
+            try:
+                with open("passwords.json", 'r') as pass_list:
+                    # Reading old data
+                    data = json.load(pass_list)
+            except FileNotFoundError:
+                with open("passwords.json", 'w') as data_file:
+                    json.dump(updated_data, data_file, indent=4)
+            else:
+                # Updating the old data with new data
+                data.update(updated_data)
+                with open("passwords.json", 'w') as data_file:
+                    # Writing new data
+                    json.dump(data, data_file, indent=4)
+            finally:
+                website_input.delete(0, END)
+                password_input.delete(0, END)
 
 # ---------------------------- SEARCH PASSWORD ------------------------------- #
 def search_password():
     website = website_input.get()
-    try:
-        with open("passwords.txt", 'r') as pass_list:
-            for line in pass_list:
-                if website in line:
-                    _, email, password = line.strip().split(" | ")
-                    messagebox.showinfo(title=website, message=f"Email: {email}\nPassword: {password}")
-                    return
-        messagebox.showinfo(title="Not Found", message=f"No details for {website} found.")
-    except FileNotFoundError:
-        messagebox.showerror(title="Error", message="No passwords saved yet.")
+    if website != "":
+        try:
+            with open("passwords.txt", 'r') as pass_list:
+                for line in pass_list:
+                    if website in line:
+                        _, email, password = line.strip().split(" | ")
+                        messagebox.showinfo(title=website, message=f"Email: {email}\nPassword: {password}")
+                        return
+            messagebox.showinfo(title="Not Found", message=f"No details for {website} found.")
+        except FileNotFoundError:
+            messagebox.showerror(title="Error", message="No passwords saved yet.")
+    else:
+        messagebox.showerror(title="Field Missing", message="Please the website's name!")
 
 # ---------------------------- CLEAR ALL ------------------------------- #
 def clear_all():
@@ -108,20 +136,20 @@ password_label = Label(text="Password:", font=FONT, bg=BG_COLOR, fg=FG_COLOR)
 password_label.grid(row=3, column=0, pady=5)
 
 # Entries
-website_input = Entry(width=32, font=FONT, bg=ENTRY_COLOR, fg=TEXT_COLOR, insertbackground=TEXT_COLOR)
-website_input.grid(row=1, column=1, pady=3)
+website_input = Entry(width=34, font=FONT, bg=ENTRY_COLOR, fg=TEXT_COLOR, insertbackground=TEXT_COLOR)
+website_input.grid(row=1, column=1, pady=5)
 website_input.focus()
 
 email_username_input = Entry(width=51, font=FONT, bg=ENTRY_COLOR, fg=TEXT_COLOR, insertbackground=TEXT_COLOR)
-email_username_input.grid(row=2, column=1, columnspan=2, pady=5)
+email_username_input.grid(row=2, column=1, columnspan=2, pady=15)
 email_username_input.insert(0, "hmasood3288@gmail.com")
 
-password_input = Entry(width=32, font=FONT, bg=ENTRY_COLOR, fg=TEXT_COLOR, insertbackground=TEXT_COLOR, show="*")
-password_input.grid(row=3, column=1, pady=5)
+password_input = Entry(width=33, font=FONT, bg=ENTRY_COLOR, fg=TEXT_COLOR, insertbackground=TEXT_COLOR, show="*")
+password_input.grid(row=3, column=1, pady=15)
 
 # Buttons
-search_button = Button(text="Search", width=14, font=FONT, bg=BUTTON_COLOR, fg=TEXT_COLOR, command=search_password)
-search_button.grid(row=1, column=2, pady=5)
+search_button = Button(text="Search", width=15, font=FONT, bg=BUTTON_COLOR, fg=TEXT_COLOR, command=search_password)
+search_button.grid(row=1, column=2)
 
 password_button = Button(text="Generate Password", font=FONT, bg=BUTTON_COLOR, fg=TEXT_COLOR, command=generate_password)
 password_button.grid(row=3, column=2, pady=5)
